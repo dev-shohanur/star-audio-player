@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = "mongodb+srv://shohanur:oIY15hQk2ojwLfU1@audioplayer.54chwbh.mongodb.net/AudioPlayer?retryWrites=true&w=majority"
+}
+
+model Session {
+  session_id  String    @id @default(auto()) @map("_id") @db.ObjectId
+  id          String    @unique
+  shop        String
+  state       String
+  isOnline    Boolean   @default(false)
+  scope       String?
+  expires     DateTime?
+  accessToken String
+  userId      BigInt?
+}
+
+model Audio {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  shop           String
+  title          String
+  url            String
+  screenDefault  Json
+  screenOne      Json
+  screenTwo      Json
+  selectedScreen String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Screen {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  shop            String
+  title           String
+  width           String
+  height          String
+  borderWidth     String?
+  borderStyle     String?
+  borderColor     String?
+  borderRadius    String?
+  iconSize        String?
+  iconColor       String?
+  background      String?
+  backgroundImage String?
+  image           String?
+  margin          String?
+  padding         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
