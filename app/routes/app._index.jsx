@@ -37,10 +37,13 @@ import {
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { PrismaClient } from "@prisma/client";
+import Loader from "../components/Loader/Loader";
 
 const prisma = new PrismaClient();
 
 export const loader = async ({ request }) => {
+  console.log("Md Shohanur Rahman");
+
   const { admin } = await authenticate.admin(request);
   const audio = await prisma.audio.findMany({
     where: {
@@ -53,7 +56,14 @@ export const loader = async ({ request }) => {
       shop: true,
     },
   });
-  return json({ audio });
+
+  const user = await prisma.Users.findMany({
+    where: { shop: admin?.rest?.session?.shop },
+  });
+
+  console.log(audio);
+
+  return json({ audio, user: user[0] });
 };
 
 export const action = async ({ request }) => {
@@ -90,11 +100,15 @@ export const action = async ({ request }) => {
   );
   const responseJson = await response.json();
 
+  console.log({ responseJson });
   if (!admin.rest.session.shop) {
     new Error("Shop not found");
   }
   let createAudio;
   if (request.method === "POST") {
+    console.log({ responseJson });
+    console.log({ responseJson });
+
     const getUrlPromise = new Promise((resolve, reject) => {
       setTimeout(async () => {
         const responseAudioUrl = await admin.graphql(
@@ -124,7 +138,8 @@ export const action = async ({ request }) => {
         url: responseAudioUrlJson.data.node.url,
         screenOne: screens[0],
         screenTwo: screens[1],
-        selectedScreen: screens[0].id,
+        screenDefault: screens[2],
+        selectedScreen: screens[0]?.title,
       },
     });
     return json({ responseJson, responseAudioUrlJson, createAudio });
@@ -137,12 +152,15 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
-  // const nav = useNavigation();
+  const nav = useNavigation();
   const actionData = useActionData();
   const loaderData = useLoaderData();
   const submit = useSubmit();
-  // const isLoading =
-  //   ["loading", "submitting"].includes(nav.state) && nav.formMethod === "POST";
+  const isLoading =
+    (["loading", "submitting"].includes(nav.state) &&
+      nav.formMethod === "POST") ||
+    nav.formMethod === "PUT" ||
+    nav.formMethod === "DELETE";
   const [active, setActive] = useState(false);
   const handleModalChange = useCallback(() => setActive(!active), [active]);
   const handleClose = () => {
@@ -151,6 +169,7 @@ export default function Index() {
 
   const [files, setFiles] = useState([]);
   const [title, setTitle] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleTitleChange = useCallback((newValue) => setTitle(newValue), []);
 
@@ -213,6 +232,9 @@ export default function Index() {
       .then((imageData) => {
         if (imageData?.success) {
           submit({ data: [imageData.data.url, title] }, { method: "POST" });
+          setFiles([]);
+          setTitle("");
+          setLoading(true);
         }
       });
     handleModalChange();
@@ -315,9 +337,22 @@ export default function Index() {
     ]),
   );
 
+  // useEffect(() => {
+  //   if (isLoading) {
+  //     setFiles([]);
+  //     setTitle("");
+  //   }
+  // }, [isLoading]);
+
+  console.log(loaderData?.audio?.length, loaderData?.user?.cardits);
+
+  if (isLoading) {
+    return <Loader />;
+  }
+
   return (
     <Page>
-      <ui-title-bar title="Remix app template">
+      <ui-title-bar title="Star Audio Player">
         <button variant="primary" onClick={uploadAudio}>
           Upload Audio
         </button>
@@ -337,6 +372,8 @@ export default function Index() {
           primaryAction={{
             content: "Submit",
             onAction: handleSubmitAudioFile,
+            loading: isLoading,
+            disabled: !title && files,
           }}
           secondaryActions={[
             {
@@ -346,18 +383,46 @@ export default function Index() {
           ]}
         >
           <Modal.Section>
-            <div style={{ marginBottom: "10px" }}>
-              <TextField
-                label="Title"
-                value={title}
-                onChange={handleTitleChange}
-                autoComplete="off"
-              />
-            </div>
-            <DropZone onDrop={handleDropZoneDrop} variableHeight>
-              {uploadedFiles}
-              {fileUpload}
-            </DropZone>
+            {loaderData?.audio?.length == loaderData?.user?.cardits ? (
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flexDirection: "column",
+                  marginTop: "20px",
+                  marginBottom: "20px",
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: "18px",
+                    color: "red",
+                    marginBottom: "10px",
+                  }}
+                >
+                  Your Maximum Limit {loaderData?.user?.cardits}
+                </h2>
+                <Button variant="primary">Upgrade</Button>
+              </div>
+            ) : (
+              <>
+                <div style={{ marginBottom: "10px" }}>
+                  <TextField
+                    label="Title"
+                    value={title}
+                    onChange={handleTitleChange}
+                    autoComplete="off"
+                  />
+                </div>
+                <DropZone onDrop={handleDropZoneDrop} variableHeight>
+                  {uploadedFiles}
+                  {fileUpload}
+                </DropZone>
+              </>
+            )}
           </Modal.Section>
         </Modal>
       </Frame>

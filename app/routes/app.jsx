@@ -4,10 +4,35 @@ import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import "@shopify/polaris/build/esm/styles.css";
 import { authenticate } from "../shopify.server";
+import prisma from "../db.server";
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
+  const { admin, billing } = await authenticate.admin(request);
 
+  // const data = await billing.require({
+  //   plans: [MONTHLY_PLAN],
+  //   isTest: true,
+  //   onFailure: async () =>
+  //     billing.request({
+  //       plan: MONTHLY_PLAN,
+  //       isTest: true,
+  //     }),
+  // });
+
+  const user = await prisma.Users.findMany({
+    where: { shop: admin?.rest?.session?.shop },
+  });
+
+  console.log({ user });
+
+  if (user[0]?.shop !== admin?.rest?.session?.shop) {
+    await prisma.Users.create({
+      data: {
+        shop: admin?.rest?.session?.shop,
+        cardits: 10,
+      },
+    });
+  }
   return json({ apiKey: process.env.SHOPIFY_API_KEY || "" });
 };
 
@@ -20,7 +45,7 @@ export default function App() {
         <Link to="/app" rel="home">
           Home
         </Link>
-        <Link to="/app/additional">Additional page</Link>
+        <Link to="/app/pricing">Pricing</Link>
       </ui-nav-menu>
       <Outlet />
     </AppProvider>

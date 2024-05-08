@@ -7,6 +7,7 @@ import {
   DropZone,
   Frame,
   Icon,
+  Spinner,
 } from "@shopify/polaris";
 import {
   Link,
@@ -31,10 +32,9 @@ import prisma from "../db.server";
 import Collapse from "../components/Collapse/Collapse";
 // import { ColorPicker } from "remix-panel";
 import { ToggleControl } from "../components/ToggleControl/ToggleControl";
-import { ColorPicker } from "../components/ColorPicker/ColorPicker";
+// import ColorPicker from "../components/ColorPicker/ColorPicker";
 
 export async function loader({ params }) {
-  // await authenticate.admin(request);
   const audio = await prisma.audio.findUnique({ where: { id: params.id } });
 
   return { audio };
@@ -48,7 +48,7 @@ export async function action({ request }) {
 
   let createAudio = "";
   let updateScreen = "";
-  if (request.method === "PUT") {
+  if (request.method === "PATCH") {
     const response = await admin.graphql(
       `#graphql
 mutation fileCreate($files: [FileCreateInput!]!) {
@@ -65,7 +65,7 @@ mutation fileCreate($files: [FileCreateInput!]!) {
           files: {
             alt: "fallback text for an File",
             contentType: "FILE",
-            originalSource: data.split(",")[0],
+            originalSource: body.get("url"),
           },
         },
       },
@@ -92,12 +92,11 @@ mutation fileCreate($files: [FileCreateInput!]!) {
     const { responseAudioUrlJson } = await getUrlPromise;
     createAudio = await prisma.audio.update({
       where: {
-        id: data.split(",")[2],
+        id: body.get("id"),
       },
       data: {
-        title: data.split(",")[1],
+        title: body.get("title"),
         url: responseAudioUrlJson.data.node.url,
-        selectScreen: data.split(",")[5],
       },
     });
 
@@ -115,24 +114,6 @@ mutation fileCreate($files: [FileCreateInput!]!) {
       },
     });
     return json({ createAudio, updateScreen });
-  } else if (request.method === "PATCH") {
-    // createAudio = await prisma.screen.update({
-    //   where: { id: data.split(",")[0] },
-    //   data: {
-    //     width: data.split(",")[1],
-    //     height: data.split(",")[2],
-    //     borderRadius: data.split(",")[3],
-    //     borderWidth: data.split(",")[4],
-    //     borderStyle: data.split(",")[5],
-    //     borderColor: data.split(",")[6],
-    //     iconSize: data.split(",")[7],
-    //     background: data.split(",")[8],
-    //     backgroundImage: data.split(",")[9],
-    //     image: data.split(",")[10],
-    //     margin: data.split(",")[11],
-    //     padding: data.split(",")[12],
-    //   },
-    // });
   }
 
   return data;
@@ -145,6 +126,9 @@ const Shohan = () => {
   const submit = useSubmit();
   const action = useActionData();
   const loaderData = useLoaderData({ data: location.pathname.split("/")[3] });
+
+  const [loading, setLoading] = useState(false);
+  const [files, setFiles] = useState([]);
 
   const [player, setPlayer] = useState(null);
 
@@ -163,8 +147,6 @@ const Shohan = () => {
   );
 
   const selectedScreen = loaderData?.audio[screen];
-
-  console.log({ selectedScreen });
 
   const [width, setWidth] = useState(selectedScreen?.width);
   const [height, setHeight] = useState(selectedScreen?.height);
@@ -190,7 +172,8 @@ const Shohan = () => {
   const [mute, setMute] = useState(selectedScreen?.controls?.mute);
   const [volume, setVolume] = useState(selectedScreen?.controls?.volume);
   const [settings, setSettings] = useState(selectedScreen?.controls?.settings);
-  console.log({ play });
+
+  const [colors, setColors] = useState("#000000");
 
   useEffect(() => {
     setWidth(selectedScreen?.width);
@@ -371,7 +354,6 @@ const Shohan = () => {
     </div>`,
     };
   } else {
-    console.log({ play, progress, currentTime, mute, volume, settings });
     controls = {
       controls: [
         play && "play",
@@ -414,31 +396,27 @@ const Shohan = () => {
   }, []);
 
   const handleUpdateCSS = () => {
-    submit(
-      {
-        data: [
-          selectedScreen.id,
-          width,
-          height,
-          borderRadius,
-          borderWidth,
-          borderStyle,
-          borderColor,
-          iconSize,
-          background,
-          backgroundImage,
-          image,
-          margin,
-          padding,
-        ],
-      },
-      { method: "PATCH" },
-    );
+    // submit(
+    //   {
+    //     data: [
+    //       selectedScreen.id,
+    //       width,
+    //       height,
+    //       borderRadius,
+    //       borderWidth,
+    //       borderStyle,
+    //       borderColor,
+    //       iconSize,
+    //       background,
+    //       backgroundImage,
+    //       image,
+    //       margin,
+    //       padding,
+    //     ],
+    //   },
+    //   { method: "POST" },
+    // );
   };
-
-  useEffect(() => {
-    console.log({ innerHeight: window.innerHeight });
-  }, []);
 
   const handleUpdate = () => {
     handleUpdateCSS();
@@ -478,9 +456,70 @@ const Shohan = () => {
     );
   };
 
+  const handleSubmitFile = () => {
+    setLoading(true);
+    const formData = new FormData();
+
+    formData.append("async-upload", files[0]);
+    const url = `https://files.bplugins.com/wp-json/media-upload/v1/image-upload`;
+    fetch(url, {
+      method: "POST",
+      body: formData,
+    })
+      .then((res) => res.json())
+      .then((imageData) => {
+        if (imageData?.success) {
+          const controls = {
+            currentTime,
+            mute,
+            play,
+            progress,
+            settings,
+            volume,
+          };
+          const screenData = {
+            ...selectedScreen,
+            width: width,
+            height: height,
+            borderRadius: borderRadius,
+            borderWidth: borderWidth,
+            borderStyle: borderStyle,
+            borderColor: borderColor,
+            iconSize: iconSize,
+            background: background,
+            backgroundImage: backgroundImage,
+            image: image,
+            margin: margin,
+            padding: padding,
+            controls,
+          };
+          submit(
+            {
+              url: imageData.data.url,
+              title: title,
+              id: loaderData?.audio?.id,
+              screen: screen,
+              screenData: JSON.stringify(screenData),
+            },
+            { method: "PATCH" },
+          );
+          setFiles([]);
+          setLoading(false);
+        } else {
+          setLoading(false);
+        }
+      });
+  };
+
   useEffect(() => {
-    console.log(selectedScreen?.image);
-  }, [selectedScreen]);
+    setFiles([]);
+  }, [url]);
+
+  const handleDropZoneDrop = useCallback(
+    (_dropFiles, acceptedFiles, _rejectedFiles) =>
+      setFiles((files) => [...files, ...acceptedFiles]),
+    [],
+  );
 
   return (
     <div>
@@ -493,9 +532,9 @@ const Shohan = () => {
           />
         </div>
         <ButtonGroup>
-          <Button size="large" disabled>
+          {/* <Button size="large" disabled>
             Cancel
-          </Button>
+          </Button> */}
           <Button
             variant="primary"
             tone="success"
@@ -510,18 +549,18 @@ const Shohan = () => {
       <div className="main-container">
         <div className="sidebar">
           <h2 className="title">Audio Player</h2>
-          <Collapse title="Content" height={400}>
+          <Collapse title="Content" height={screen == "screenTwo" ? 500 : 400}>
             <TextInput
               type="text"
               label="Title"
               value={title}
               onChange={setTitle}
             />
-            <TextInput type="url" label="Url" value={url} onChange={setUrl} />
+            {/* <TextInput type="url" label="Url" value={url} onChange={setUrl} /> */}
             <div className="FileUpload">
               <label htmlFor={`FileUpload`}>Audio</label>
               <div className="filed">
-                {isLoading && (
+                {loading && (
                   <Spinner
                     accessibilityLabel="Small spinner example"
                     size="small"
@@ -535,16 +574,16 @@ const Shohan = () => {
                   disabled={isLoading}
                 />
                 <div style={{ width: 40, height: 40 }}>
-                  <DropZone>
+                  <DropZone onDrop={handleDropZoneDrop}>
                     <DropZone.FileUpload />
                   </DropZone>
-                  {
+                  {files?.length > 0 ? (
                     <Button
                       icon={CheckSmallIcon}
                       accessibilityLabel="Save"
                       onClick={handleSubmitFile}
                     />
-                  }
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -607,7 +646,7 @@ const Shohan = () => {
               onChange={setIconSize}
             />
           </Collapse>
-          <Collapse title="Border" height={300}>
+          <Collapse title="Border" height={600}>
             <NumberUnit
               type="number"
               label="Border Radius"
@@ -630,6 +669,7 @@ const Shohan = () => {
               value={borderWidth}
               onChange={setBorderWidth}
             />
+            {/* <ColorPicker value={borderColor} onChange={setBorderColor} /> */}
             <SelectInput
               label="Border Style"
               options={[
@@ -696,11 +736,12 @@ const Shohan = () => {
                 --plyr-control-icon-size:${iconSize};
                 --plyr-audio-controls-background:${background};
                 --plyr-menu-border-color:${borderColor};
+                --plyr-range-thumb-height:15px;
               }
               .plyr--audio .plyr__controls {
                   border-radius:${borderRadius};
               }
-                .plyr.plyr--full-ui.plyr--audio.plyr--html5.plyr--paused.plyr--stopped {
+                .plyr.plyr--full-ui.plyr--audio.plyr--html5.plyr--paused {
                   width:${width};
                 height:${height};
               }`

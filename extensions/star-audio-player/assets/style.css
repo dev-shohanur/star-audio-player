@@ -300,7 +300,7 @@ button {
 
 .demo-1 .container .image-box {
 
-  height: 200px !important;
+  height: 180px !important;
   background-position: center center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -350,8 +350,9 @@ button {
 .demo-1 .title {
   font-size: 30px;
   font-weight: bold;
-
+  color: white;
   margin-bottom: 10px;
+  margin-top: 0;
 }
 
 .controls {
@@ -362,7 +363,7 @@ button {
 }
 
 .controls button {
-  width: 50px;
+  width: 50px !important;
   height: 50px;
   cursor: pointer;
 }

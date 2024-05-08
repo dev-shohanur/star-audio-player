@@ -7,7 +7,8 @@ generator client {
 
 datasource db {
   provider = "mongodb"
-  url      = "mongodb+srv://shohanur:oIY15hQk2ojwLfU1@audioplayer.54chwbh.mongodb.net/AudioPlayer?retryWrites=true&w=majority"
+  // url      = "mongodb+srv://devsr1st:4NPNooM5r8UGxBhG@staraudioplayer.1vdcrf7.mongodb.net/starAudioPlayer"
+  url      = "mongodb+srv://shohanur:dWUoeh8h2n04QlmF@audioplayer.54chwbh.mongodb.net/AudioPlayer"
 }
 
 model Session {
@@ -20,6 +21,45 @@ model Session {
   expires     DateTime?
   accessToken String
   userId      BigInt?
+}
+
+model Users {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  shop      String   @unique
+  planId    String?
+  chargeId  String?
+  cardits   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Charges {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  shop         String
+  name         String
+  price        String
+  status       String
+  cradit       String?
+  activated_on String?
+  trial_days   String?
+  cancelled_on String?
+  billing_on   String?
+  planId       String?
+  chargeId     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Plans {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  price        String
+  currencyCode String
+  options      Json?
+  trial_days   String?
+  cradit       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Audio {

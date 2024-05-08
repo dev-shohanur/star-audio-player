@@ -11,9 +11,6 @@ const NumberUnit = ({ position, type, label, options, value, onChange }) => {
 
   useEffect(() => {
     onChange(number + unit);
-    // top.alert(`number ${number} ${unit}`);
-    // alert(`number ${number} ${unit}`);
-    console.log(`number ${number} ${unit}`);
   }, [unit, number]);
 
   function createRandomString(length) {

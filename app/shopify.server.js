@@ -4,10 +4,14 @@ import {
   DeliveryMethod,
   shopifyApp,
   LATEST_API_VERSION,
+  BillingInterval
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import { restResources } from "@shopify/shopify-api/rest/admin/2024-01";
 import prisma from "./db.server";
+export const FREE_PLAN = 'One Time subscription';
+export const PRO_PLAN = 'Pro subscription';
+export const PRO_PLUS_PLAN = 'Pro Plus subscription';
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -28,6 +32,17 @@ const shopify = shopifyApp({
   hooks: {
     afterAuth: async ({ session }) => {
       shopify.registerWebhooks({ session });
+    },
+  }, billing: {
+    [PRO_PLAN]: {
+      amount: 40,
+      currencyCode: 'USD',
+      interval: BillingInterval.OneTime,
+    },
+    [PRO_PLUS_PLAN]: {
+      amount: 60,
+      currencyCode: 'USD',
+      interval: BillingInterval.OneTime,
     },
   },
   future: {

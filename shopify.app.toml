@@ -2,7 +2,7 @@
 
 client_id = "871d3aa955ec444c34b8558d1f4d56b8"
 name = "star-audio-player"
-application_url = "https://paying-pharmaceutical-teach-mem.trycloudflare.com"
+application_url = "https://ala-lifetime-rev-outputs.trycloudflare.com"
 embedded = true
 
 [build]
@@ -12,13 +12,13 @@ include_config_on_deploy = true
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_files,write_themes"
+scopes = "read_products,read_script_tags,write_files,write_script_tags,write_themes"
 
 [auth]
 redirect_urls = [
-  "https://paying-pharmaceutical-teach-mem.trycloudflare.com/auth/callback",
-  "https://paying-pharmaceutical-teach-mem.trycloudflare.com/auth/shopify/callback",
-  "https://paying-pharmaceutical-teach-mem.trycloudflare.com/api/auth/callback"
+  "https://ala-lifetime-rev-outputs.trycloudflare.com/auth/callback",
+  "https://ala-lifetime-rev-outputs.trycloudflare.com/auth/shopify/callback",
+  "https://ala-lifetime-rev-outputs.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]
