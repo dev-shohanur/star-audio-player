@@ -42,7 +42,6 @@ import Loader from "../components/Loader/Loader";
 const prisma = new PrismaClient();
 
 export const loader = async ({ request }) => {
-  console.log("Md Shohanur Rahman");
 
   const { admin } = await authenticate.admin(request);
   const audio = await prisma.audio.findMany({
@@ -344,7 +343,6 @@ export default function Index() {
   //   }
   // }, [isLoading]);
 
-  console.log(loaderData?.audio?.length, loaderData?.user?.cardits);
 
   if (isLoading) {
     return <Loader />;
